@@ -1,0 +1,335 @@
+---
+title: "Exploring the Relationship Between Arable Land Use, Food Insecurity, and Healthcare Facilities in Mafeteng"
+author: "REFILOE SEKALELI"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: cayman
+    highlight: tango
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("vembedr")
+```
+
+
+```{r}
+library(rinat)
+library(sf)
+library(tidyverse)
+library(tmap)
+library(leaflet)
+library(osmdata)
+library(ggplot2)
+library(png)
+library(httr)
+library(ggmap)
+library(magick)
+library(rnaturalearthhires)
+library(rnaturalearthdata)
+library(rnaturalearth)
+
+```
+
+## Introduction
+
+My name is Refiloe Sekaleli and I am from Lesotho, a land locked country in Southern Africa. I work at the Land Administration Authority as a GIS coordinator. The authority aims to protect rights of Basotho through lease and deed registration, cadastral survey, dispute resolution and litigation.
+
+About 16% of the country's population is facing acute food insecurity and is estimated to increase further by 6% by March 2024(IPC;Integrated Food Security Phase Classification,2023). This in turn results in increased mortality rates and malnutrition in both infants and adults, infants being the most impacted population group.
+
+There are several results that the country faces which results in further decline in food production. These includes among other factors;Poor land management practices such as extensive cultivation,leading to soil erosion and degradation.Unplanned use and overgrazing of range lands which depletes the state and quality of the arable land that is used for crop production. 
+
+This project will be focusing on Two SDG goals with our focus area being Mafeteng District
+A. Zero hunger
+B. Good Health
+
+
+```{r}
+url<-("https://mapcarta.com/14210908")
+embed(url)
+```
+**FIG1: Location map of Mafeteng Lesotho**
+
+### A. ZERO HUNGER-ARABLE LAND USE CHANGE WITHIN MAFETENG LESOTHO
+```{r}
+image_url<- ("https://t3.ftcdn.net/jpg/05/01/68/20/240_F_501682087_EHyx1E4aZ4uCGNHAtWxVuHufQvGfsm1A.jpg") 
+
+```
+
+The southern parts of Lesotho, namely Mafeteng, Mohale's hoek and Quthing are the three districts facing adverse effects of climate change and poor land management. Mafeteng district has been declared on verge of desertification as such food productivity within the region has declined rendering household not to support their families, hence the need to analyse arable land use vs other land use types in the district.
+```{r}
+
+```
+
+```{r}
+bb <- getbb("MAFETENG_LESOTHO")
+
+```
+```{r}
+bb %>%
+  opq()
+```
+```{r}
+residential <- bb %>%
+  opq() %>%
+    add_osm_feature(key = "landuse", value = "residential") %>%
+    osmdata_sf()
+
+orchard <- bb %>%
+   opq() %>%
+    add_osm_feature(key = "landuse", value = "orchard") %>%
+    osmdata_sf()
+
+agriculture <- bb %>%
+  opq() %>%
+    add_osm_feature(key = "agriculture", value = "yes") %>%  
+    osmdata_sf()
+
+streets <- bb %>%
+  opq() %>%
+    add_osm_feature("highway", c("motorway", "primary", "secondary", "tertiary")) %>%
+    osmdata_sf()
+
+small_streets <- bb %>%
+  opq() %>%
+    add_osm_feature(key = "highway", value = c("residential", "living_street", "unclassified", "service", "footway")) %>%
+    osmdata_sf()
+
+farmland <- bb %>%
+  opq() %>%
+    add_osm_feature(key = "landuse", value = "farmland") %>%
+    osmdata_sf()
+
+
+wholesale <- bb %>%
+  opq() %>%
+    add_osm_feature(key = "sale", value = "wholesale") %>%
+    osmdata_sf()
+
+Supermarket <- bb %>%
+opq() %>%
+    add_osm_feature(key = "sale", value = "supermarket") %>%
+    osmdata_sf()
+```
+```{r}
+greenhouse_horticulture <- bb %>%
+opq() %>%
+    add_osm_feature(key = "landuse", value = "greenhouse_horticulture") %>%
+    osmdata_sf()
+```
+
+
+```{r}
+agriculture
+farmland
+greenhouse_horticulture
+orchard
+residential
+streets
+Supermarket
+wholesale
+```
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+states <- (ne_states(country = "LESOTHO"))
+```
+```{r}
+Mafeteng<- states
+```
+##1.1 DATA SOUCE AND OBSERVATION
+The data below was retrieved fromOpenStreetMap showing farmland/Arable land versus other land use types such as residential use,greenhouse_horticulture,orchards and general agricultural fields.
+
+Upon observation the interactive map of Arable Land use in Mafeteng against other use types shows that residential use is most predominant in the town of Mafeteng where majority of the population resides,indicating that majority of the people living within the town have no access to arable land, In order for them to access arable land they have to do so outskirts of town. Arable land is located mostly in the rural areas of Mafeteng. Most arable lands are found near rivers,tributaries and stream.while vast lands can be observed along major rivers within Mafeteng such as Mohokare Ts'akholo river,Tsoaing and Ts'akholo lake and along wetlands.
+
+```{r}
+ggplot(data = world) +
+geom_sf() +
+geom_sf(data = world) +
+geom_sf(data = states)+
+geom_sf(data = states, fill = "antiquewhite1", size = 0.25) +
+geom_sf(data = Mafeteng, fill = "antiquewhite2", color = "#1155cc")+
+geom_sf(data = farmland$osm_polygons, inherit.aes = FALSE, color = "#11823B", fill = "#91f086", size = .5, alpha = .5) +
+geom_sf(data = orchard$osm_polygon, inherit.aes = FALSE, color = "#11823b", size = .4, alpha = .8) +
+geom_sf(data = greenhouse_horticulture$osm_points, inherit.aes = FALSE, color = "#5b6613", size = .4, alpha = .8) +
+geom_sf(data = residential$osm_polygons, inherit.aes = FALSE, colour = "red", fill = "red", alpha = .5, size = .5) +
+geom_sf(data = streets$osm_lines, inherit.aes = FALSE, color = "#a6a6a6", size = .4, alpha = .8) +
+coord_sf(xlim = c( 27.01138, 28.06419), ylim = c(-30.05834, -29.52626), expand = TRUE) +
+geom_sf_text(data = states10, aes(label =name ),size = 5,fontface = "bold")+
+theme_bw() +
+
+  
+  labs(
+    title = "ARABLE LAND USE AGAINST OTHER LAND USES IN MAFETENG",
+    subtitle = "Created by Refiloe Sekaleli",
+    x = "Longitude",
+    y = "Latitude",
+    caption = "Data Source: OpenStreetMap"
+     )
+scale_fill_manual(name = "Land Use", 
+                    values = c(
+                      "Farmland" = "#91f086",
+                      "Orchard" = "#11823b",
+                      "Greenhouse" = "#5b6613",
+                      "Residential" = "red"
+                    ),
+                    labels = c("Farmland", "Orchard", "Greenhouse", "Residential")) +
+  theme(legend.position = "right")  
+```
+```{r}
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(
+    data = farmland$osm_polygons,
+  ) 
+```
+
+##1.2 DATA LIMITATIONS
+1.osm has outdated data that does not fully depict the current situation in the region.For instance,along the lekoantlana river there is incessant encroachment of residential use onto arable land hence decreased access to arable land by uban residents to use for crop production.
+
+2. outdated map does not indicate any grocery stores or wholesale stores that are available for locals to access food products.
+
+3.inaccuracy:It generalises the land use patterns making it difficult to interpret each landuse 
+
+4.bounding box on smaller areas does not depict the inteprete attributes are not incorporated within OSM.
+
+
+###B.ACCESS TO HEALTHCARE IN MAFETENG
+There is a direct relationship between food security, access to arable land and healthcare. Food insecurity is a major factor leading to increased mortality rates of infants and adults in developing countries like Lesotho. Malnutrition leads to stunted growth in kids making them vulnerable to diseases and hospitalization, it also leads to lack of essential minerals necessary for growth. The map below illustrates access to healthcare facilities in Mafeteng district essential in providing health education for locals about healthy eating and risks associated with lack of food.
+```{r}
+image_url<- ("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiLbJ_chzJrCIJ2UmlWeDOyx8Cta09-PQJ7A&s")
+```
+
+<img src="`r here::here('Images/ALL-SPICE.png')`" width="240" /> <img src="`r here::here('Images/3_CIFAL.png')`" width="200" />
+
+```{r}
+bb %>%
+  opq()
+```
+
+```{r}
+hospital <- bb %>%
+opq() %>%
+		add_osm_feature(key = "amenity", value = "hospital") %>%
+		osmdata_sf()
+
+clinic <- bb %>%
+	opq() %>%
+		add_osm_feature(key = "amenity", value = "clinic") %>%
+		osmdata_sf() 
+
+chemist<- bb %>%
+    	opq() %>%
+		add_osm_feature(key = "shop",value =  "chemist") %>%
+		osmdata_sf()
+  
+pharmacy <- bb %>%
+	opq() %>%
+		add_osm_feature(key = "amenity", value = "pharmacy") %>%
+		osmdata_sf()
+
+specialist <- bb %>%
+	opq() %>%
+		add_osm_feature(key = "healthcare", value = "specialist") %>%	
+		osmdata_sf()
+
+counselling<- bb %>%
+	opq() %>%
+		add_osm_feature(key = "healthcare", value = "counselling") %>%
+			osmdata_sf() 
+
+streets <- bb %>%
+  opq() %>%
+    add_osm_feature("highway", c("primary", "secondary", "tertiary")) %>%
+    osmdata_sf()
+
+```
+```{r}
+hospital
+chemist
+pharmacy
+clinic
+specialist
+counselling
+streets
+```
+##1.1 DATA SOUCE AND OBSERVATION
+The static map below show all healthcare facilities withing the bounding box of Mafeteng and their proximity to villages and roads for ease of access for the sick. The analysis was done using osm data for hospitals, clinics, chemists, pharmacies, specialists ,wholesalers and shops within the area of Mafeteng.
+Only one hospital was identified in the central region of Mafeteng and another hospital outside the Mafeteng boundaries and a total of four health centers were identified. 
+As per BOS Lesotho 2016 statistics Mafeteng has a population of 178,222 and one hospital is expected to service the entire population. Hence the high rate of infant mortality and death rates within the region. 
+```{r}
+ggplot(data = world) +
+geom_sf() +
+geom_sf(data = world) +
+geom_sf(data = states)+
+geom_sf(data = states, fill = "antiquewhite1", size = 0.25) +
+geom_sf(data = Mafeteng, fill = "antiquewhite2", color = "#1155cc")+
+geom_sf(data = hospital$osm_polygons, inherit.aes = FALSE, color = "red", fill = "red", size = 10, alpha = .5) +
+geom_sf(data = chemist$osm_polygon, inherit.aes = FALSE, color = "yellow", size = 10, alpha = .5) +
+geom_sf(data = pharmacy$osm_points, inherit.aes = FALSE, color = "orange", size = 10, alpha = .5) +
+geom_sf(data = clinic$osm_polygon, inherit.aes = FALSE, color = "blue", size = 10, alpha = .5) +
+  geom_sf(data = specialist$osm_polygons, inherit.aes = FALSE, colour = "red", fill = "brown", alpha = .5, size = .5) +
+geom_sf(data = counselling$osm_points, inherit.aes = FALSE, color = "#green", size = .4, alpha = .8) +
+geom_sf(data = streets$osm_lines, inherit.aes = FALSE, color = "#a6a6a6", size = .4, alpha = .8) +
+coord_sf(xlim = c( 27.01138, 28.06419), ylim = c(-30.05834, -29.52626), expand = TRUE) +
+geom_sf_text(data = states10, aes(label =name ),size = 5,fontface = "bold")+
+  geom_sf_text(data = hospital$osm_polygons, aes(label = name), size = 2, hjust = 0) +
+theme_bw() +
+  geom_sf_text(data = clinic$osm_polygons, aes(label = name), size = 2, hjust = 0) +
+theme_bw() +
+  
+  scale_fill_manual(name = "health_care FACILITIES", 
+                    values = c(
+                      "hospital" = "red",
+                      "chemist" = "yellow",
+                      "pharmacy" = "orange",
+                      "clinic" = "blue",
+		      "specialist" = "brown",
+                      "counselling" = "green"
+
+                    )) +
+    theme_bw() +
+  labs(
+    title = "HEALTH CARE FACILITIES IN MAFETENG",
+    subtitle = "Created by Refiloe Sekaleli",
+    x = "Longitude",
+    y = "Latitude",
+    caption = "Data Source: OpenStreetMap",
+     ) 
+
+```
+
+##1.2 DATA LIMITATIONS
+
+1.osm has outdated data that does not fully depict the current situation in the region.For instance,there are other clinics and healthcenters within the twon of mafeteng that the osm data did not indicate for the analysis
+
+2. outdated map does not indicate any grocery stores or wholesale stores that are available for locals to access food products where locals can purchase food for balanced meals
+
+3.inaccuracy:It generalizes number of healthcare facilities and chemists within the region making it difficult to interpret the data
+
+4.bounding box on smaller areas does not depict the inteprete attributes are not incorporated within OSM
+
+##1.3 RECOMMANDATIONS
+
+Food security plays a key role in improved economies and good health hence the need to asses the nations ability to produce food and feed its nation. Increased food production is depended on access to arable land and water for irrigation. Seeing that as  country Lesotho is experiencing a decline in food production increasing vulnerability of households and the dependency of the country on food aid, hence the need to determine land use and land use change while also catering for the effects of climate change which is a global challenge.
+Based on the arable land use  of Mafeteng, there seems to be arable land within the district but measures have to be taken in order to address the issue of lower yields within the country. The following can be done by communities and  the government for improved food production.
+	a. Ensure that locals are sensitized on the issue of smart agriculture, where seeds are modified to withstand harsh climatic conditions as opposed to 	the traditional seeds that were not well adapted to these conditions. 
+	b. Crop rotation is essential to enhance soil fertility by ensuring that crops are regularly change to minimize essential mineral depletion
+	c. Accessibility of organic soil enhancers and fertilizers at affordable prices, for crops that thrive well with additional nutrients such as maize/corn(staple food in Lesotho)
+	d. sensitize locals on issues of range management ,since the our rangelands are not well managed there are alien invasive species that have displaced fodder and grass for animal feeding.
+
+On the same note Availability food is essential to ensuring that people are healthy and healthy people partake in job creation activities that are essential  in alleviating poverty hence the need to strengthen our health systems also.
+	a. Government should ensure that provision for health services is accessible for all.
+	b. Major challenge in rural area where health centers are far from villages and locals have to travel long distances to access services.
+	c. health education especially nutrition should be strengthened from young kids at school to village gatherings through the ministry of agriculture and food security.
+
+
+This final project can be in any language you are comfortable using. I would love to see projects in your native language if it is not English! If you need help translating the text in your maps, please reach out to the instructor.
+
+##CONCLUSION
+Food security is essential for all and it is the main driving force for economic growth, and also good health hence the need to ensure that there is arable land which locals can utilize for food production. sensitization  and good land management practices by locals can lead to improved soil quality and increased food production resulting in lower death since people will have improved health as well.
+
+
